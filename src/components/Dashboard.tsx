@@ -4,9 +4,10 @@ import { useData } from '../contexts/DataContext';
 
 interface DashboardProps {
   onAddTransaction: () => void;
+  onNavigate?: (tab: string) => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction, onNavigate }) => {
   const { state, getMonthlyStats } = useData();
   
   // Get recent transactions (last 5)
@@ -25,6 +26,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
     'Bills': 'bg-red-100 text-red-800',
     'Healthcare': 'bg-teal-100 text-teal-800',
     'Other': 'bg-gray-100 text-gray-800'
+  };
+
+  const handleNavigate = (tab: string) => {
+    if (onNavigate) {
+      onNavigate(tab);
+    }
   };
 
   return (
@@ -117,7 +124,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
             <button
-              onClick={onAddTransaction}
+              onClick={() => handleNavigate('transactions')}
               className="text-blue-600 hover:text-blue-700 font-medium text-sm"
             >
               View All
@@ -189,9 +196,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
           </div>
         </button>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <button
+          onClick={() => handleNavigate('budget')}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 hover:border-green-200 group cursor-pointer"
+        >
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors duration-200">
               <Target className="w-6 h-6 text-green-600" />
             </div>
             <div className="text-left">
@@ -199,11 +209,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
               <p className="text-sm text-gray-500">Create spending limits</p>
             </div>
           </div>
-        </div>
+        </button>
 
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <button
+          onClick={() => handleNavigate('charts')}
+          className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 hover:border-purple-200 group cursor-pointer"
+        >
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors duration-200">
               <PieChart className="w-6 h-6 text-purple-600" />
             </div>
             <div className="text-left">
@@ -211,7 +224,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction }) => {
               <p className="text-sm text-gray-500">Analyze spending patterns</p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
     </div>
   );

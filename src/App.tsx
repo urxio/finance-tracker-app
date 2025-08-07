@@ -22,10 +22,14 @@ function App() {
     { id: 'data', label: 'Data', icon: Database },
   ];
 
+  const handleNavigate = (tab: string) => {
+    setActiveTab(tab);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard onAddTransaction={() => setShowTransactionForm(true)} />;
+        return <Dashboard onAddTransaction={() => setShowTransactionForm(true)} onNavigate={handleNavigate} />;
       case 'transactions':
         return <TransactionManager />;
       case 'charts':
@@ -37,7 +41,7 @@ function App() {
       case 'data':
         return <DataManager />;
       default:
-        return <Dashboard onAddTransaction={() => setShowTransactionForm(true)} />;
+        return <Dashboard onAddTransaction={() => setShowTransactionForm(true)} onNavigate={handleNavigate} />;
     }
   };
 
