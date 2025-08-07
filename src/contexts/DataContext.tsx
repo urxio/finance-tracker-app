@@ -57,6 +57,11 @@ const initialState: DataState = {
   error: null,
 };
 
+// Helper function to generate unique IDs
+const generateId = (): number => {
+  return Date.now() + Math.random();
+};
+
 // Helper function to calculate budget spent for a category
 const calculateBudgetSpent = (transactions: Transaction[], category: string): number => {
   const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
@@ -87,7 +92,7 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         budgets: updateAllBudgetSpent(action.payload, state.budgets)
       };
     case 'ADD_TRANSACTION':
-      const newTransactions = [...state.transactions, { ...action.payload, id: Date.now() }];
+      const newTransactions = [...state.transactions, { ...action.payload, id: generateId() }];
       return { 
         ...state, 
         transactions: newTransactions,
@@ -115,7 +120,7 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         budgets: updateAllBudgetSpent(state.transactions, action.payload)
       };
     case 'ADD_BUDGET':
-      const newBudget = { ...action.payload, id: Date.now() };
+      const newBudget = { ...action.payload, id: generateId() };
       const updatedBudgets = [...state.budgets, newBudget];
       return { 
         ...state, 
@@ -196,40 +201,34 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
       ...transaction,
-      id: Date.now()
+      id: generateId()
     };
     dispatch({ type: 'ADD_TRANSACTION', payload: newTransaction });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const updateTransaction = (transaction: Transaction) => {
     dispatch({ type: 'UPDATE_TRANSACTION', payload: transaction });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const deleteTransaction = (id: number) => {
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const addBudget = (budget: Omit<Budget, 'id'>) => {
     const newBudget: Budget = {
       ...budget,
-      id: Date.now(),
+      id: generateId(),
       spent: 0
     };
     dispatch({ type: 'ADD_BUDGET', payload: newBudget });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const updateBudget = (budget: Budget) => {
     dispatch({ type: 'UPDATE_BUDGET', payload: budget });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const deleteBudget = (id: number) => {
     dispatch({ type: 'DELETE_BUDGET', payload: id });
-    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const addCategory = (category: string) => {

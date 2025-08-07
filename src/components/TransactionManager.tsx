@@ -200,15 +200,18 @@ const TransactionManager: React.FC = () => {
     }));
   };
 
-  const categoryColors: { [key: string]: string } = {
-    'Food': 'bg-orange-100 text-orange-800',
-    'Transportation': 'bg-blue-100 text-blue-800',
-    'Entertainment': 'bg-purple-100 text-purple-800',
-    'Income': 'bg-green-100 text-green-800',
-    'Shopping': 'bg-pink-100 text-pink-800',
-    'Bills': 'bg-red-100 text-red-800',
-    'Healthcare': 'bg-teal-100 text-teal-800',
-    'Other': 'bg-gray-100 text-gray-800'
+  const getCategoryColor = (category: string): string => {
+    const categoryColors: { [key: string]: string } = {
+      'Food': 'bg-orange-100 text-orange-800',
+      'Transportation': 'bg-blue-100 text-blue-800',
+      'Entertainment': 'bg-purple-100 text-purple-800',
+      'Income': 'bg-green-100 text-green-800',
+      'Shopping': 'bg-pink-100 text-pink-800',
+      'Bills': 'bg-red-100 text-red-800',
+      'Healthcare': 'bg-teal-100 text-teal-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    return categoryColors[category] || 'bg-gray-100 text-gray-800';
   };
 
   return (
@@ -486,9 +489,7 @@ const TransactionManager: React.FC = () => {
                     <div>
                       <p className="font-medium text-gray-900">{transaction.description}</p>
                       <div className="flex items-center space-x-2 mt-1">
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          categoryColors[transaction.category] || 'bg-gray-100 text-gray-800'
-                        }`}>
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
                           {transaction.category}
                         </span>
                         <span className="text-sm text-gray-500">{transaction.paymentMethod}</span>

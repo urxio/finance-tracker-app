@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, X, Plus } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, X, Plus, Trash2, Eye, Edit3 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 
 interface CSVTransaction {
+  id: string;
   description: string;
   amount: number;
   category: string;
@@ -17,6 +18,8 @@ const CSVImport: React.FC = () => {
   const [importedTransactions, setImportedTransactions] = useState<CSVTransaction[]>([]);
   const [newCategories, setNewCategories] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState('');
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<string>>(new Set());
+  const [showReview, setShowReview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -61,7 +64,9 @@ const CSVImport: React.FC = () => {
         const csvText = e.target?.result as string;
         const transactions = parseCSV(csvText);
         setImportedTransactions(transactions);
+        setSelectedTransactions(new Set(transactions.map(t => t.id)));
         setImportStatus('success');
+        setShowReview(true);
       } catch (error) {
         setErrorMessage('Error parsing CSV file. Please check the format.');
         setImportStatus('error');
@@ -114,6 +119,7 @@ const CSVImport: React.FC = () => {
       }
 
       transactions.push({
+        id: `csv-${Date.now()}-${i}-${Math.random()}`,
         description,
         amount: absAmount,
         category,
@@ -161,16 +167,51 @@ const CSVImport: React.FC = () => {
     }
   };
 
+  const handleDeleteTransaction = (id: string) => {
+    setImportedTransactions(prev => prev.filter(t => t.id !== id));
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+  };
+
+  const handleSelectTransaction = (id: string, selected: boolean) => {
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev);
+      if (selected) {
+        newSet.add(id);
+      } else {
+        newSet.delete(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (selected: boolean) => {
+    if (selected) {
+      setSelectedTransactions(new Set(importedTransactions.map(t => t.id)));
+    } else {
+      setSelectedTransactions(new Set());
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    setImportedTransactions(prev => prev.filter(t => !selectedTransactions.has(t.id)));
+    setSelectedTransactions(new Set());
+  };
+
   const handleImport = () => {
-    if (importedTransactions.length === 0) return;
+    const transactionsToImport = importedTransactions.filter(t => selectedTransactions.has(t.id));
+    if (transactionsToImport.length === 0) return;
 
     // Add new categories first
     newCategories.forEach(category => {
       addCategory(category);
     });
 
-    // Then add transactions
-    importedTransactions.forEach(transaction => {
+    // Then add selected transactions
+    transactionsToImport.forEach(transaction => {
       addTransaction({
         description: transaction.description,
         amount: transaction.amount,
@@ -186,6 +227,8 @@ const CSVImport: React.FC = () => {
     setNewCategories([]);
     setImportStatus('idle');
     setErrorMessage('');
+    setSelectedTransactions(new Set());
+    setShowReview(false);
   };
 
   const handleCancel = () => {
@@ -193,9 +236,25 @@ const CSVImport: React.FC = () => {
     setNewCategories([]);
     setImportStatus('idle');
     setErrorMessage('');
+    setSelectedTransactions(new Set());
+    setShowReview(false);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const getCategoryColor = (category: string): string => {
+    const categoryColors: { [key: string]: string } = {
+      'Food': 'bg-orange-100 text-orange-800',
+      'Transportation': 'bg-blue-100 text-blue-800',
+      'Entertainment': 'bg-purple-100 text-purple-800',
+      'Income': 'bg-green-100 text-green-800',
+      'Shopping': 'bg-pink-100 text-pink-800',
+      'Bills': 'bg-red-100 text-red-800',
+      'Healthcare': 'bg-teal-100 text-teal-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    return categoryColors[category] || 'bg-gray-100 text-gray-800';
   };
 
   const getSampleCSV = () => {
@@ -215,6 +274,9 @@ Restaurant,-85.50,Food,2024-01-12`;
     window.URL.revokeObjectURL(url);
   };
 
+  const selectedCount = selectedTransactions.size;
+  const totalCount = importedTransactions.length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -233,45 +295,47 @@ Restaurant,-85.50,Food,2024-01-12`;
       </div>
 
       {/* File Upload Area */}
-      <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
-          isDragging
-            ? 'border-blue-400 bg-blue-50'
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv"
-          onChange={handleFileSelect}
-          className="hidden"
-        />
-        
-        <div className="space-y-4">
-          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-            <Upload className="w-8 h-8 text-gray-400" />
-          </div>
+      {!showReview && (
+        <div
+          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors duration-200 ${
+            isDragging
+              ? 'border-blue-400 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           
-          <div>
-            <p className="text-lg font-medium text-gray-900">
-              Drop your CSV file here, or{' '}
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                browse
-              </button>
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Supported format: CSV with columns: description, amount, category, date
-            </p>
+          <div className="space-y-4">
+            <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+              <Upload className="w-8 h-8 text-gray-400" />
+            </div>
+            
+            <div>
+              <p className="text-lg font-medium text-gray-900">
+                Drop your CSV file here, or{' '}
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  browse
+                </button>
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Supported format: CSV with columns: description, amount, category, date
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Status Messages */}
       {importStatus === 'processing' && (
@@ -288,8 +352,9 @@ Restaurant,-85.50,Food,2024-01-12`;
         </div>
       )}
 
-      {importStatus === 'success' && (
-        <div className="space-y-4">
+      {/* Review Section */}
+      {showReview && importStatus === 'success' && (
+        <div className="space-y-6">
           {/* New Categories Warning */}
           {newCategories.length > 0 && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -316,34 +381,85 @@ Restaurant,-85.50,Food,2024-01-12`;
             </div>
           )}
 
+          {/* Selection Controls */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedCount === totalCount && totalCount > 0}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Select All ({selectedCount}/{totalCount})
+                  </span>
+                </label>
+                {selectedCount > 0 && (
+                  <button
+                    onClick={handleDeleteSelected}
+                    className="inline-flex items-center px-3 py-1 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-md transition-colors duration-200"
+                  >
+                    <Trash2 className="w-4 h-4 mr-1" />
+                    Delete Selected ({selectedCount})
+                  </button>
+                )}
+              </div>
+              <div className="text-sm text-gray-500">
+                {selectedCount} of {totalCount} transactions selected
+              </div>
+            </div>
+          </div>
+
           {/* Import Preview */}
           <div className="bg-white rounded-lg border border-gray-200">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-medium text-gray-900">
-                Import Preview ({importedTransactions.length} transactions)
+                Review Transactions ({totalCount} total)
               </h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Select which transactions you want to import
+              </p>
             </div>
-            <div className="max-h-64 overflow-y-auto">
-              {importedTransactions.map((transaction, index) => (
+            <div className="max-h-96 overflow-y-auto">
+              {importedTransactions.map((transaction) => (
                 <div
-                  key={index}
-                  className="px-6 py-3 border-b border-gray-100 hover:bg-gray-50"
+                  key={transaction.id}
+                  className="px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="checkbox"
+                      checked={selectedTransactions.has(transaction.id)}
+                      onChange={(e) => handleSelectTransaction(transaction.id, e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
                     <div className="flex-1">
-                      <p className="font-medium text-gray-900">{transaction.description}</p>
-                      <p className="text-sm text-gray-500">{transaction.date}</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{transaction.description}</p>
+                          <p className="text-sm text-gray-500">{transaction.date}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-semibold ${
+                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                          }`}>
+                            {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                          </p>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+                            {transaction.category}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <p className={`font-semibold ${
-                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                      }`}>
-                        {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
-                      </p>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                        {transaction.category}
-                      </span>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteTransaction(transaction.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      title="Delete transaction"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -351,21 +467,27 @@ Restaurant,-85.50,Food,2024-01-12`;
           </div>
 
           {/* Action Buttons */}
-          <div className="flex space-x-3">
-            <button
-              onClick={handleImport}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200"
-            >
-              <CheckCircle className="w-4 h-4 mr-2" />
-              Import {importedTransactions.length} Transactions
-            </button>
-            <button
-              onClick={handleCancel}
-              className="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors duration-200"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Cancel
-            </button>
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-3">
+              <button
+                onClick={handleImport}
+                disabled={selectedCount === 0}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors duration-200"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Import {selectedCount} Selected Transactions
+              </button>
+              <button
+                onClick={handleCancel}
+                className="inline-flex items-center px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg font-medium transition-colors duration-200"
+              >
+                <X className="w-4 h-4 mr-2" />
+                Cancel
+              </button>
+            </div>
+            <div className="text-sm text-gray-500">
+              {selectedCount} of {totalCount} transactions ready to import
+            </div>
           </div>
         </div>
       )}

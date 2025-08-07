@@ -17,15 +17,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction, onNavigate }) =
 
   const monthlyStats = getMonthlyStats();
 
-  const categoryColors: { [key: string]: string } = {
-    'Food': 'bg-orange-100 text-orange-800',
-    'Transportation': 'bg-blue-100 text-blue-800',
-    'Entertainment': 'bg-purple-100 text-purple-800',
-    'Income': 'bg-green-100 text-green-800',
-    'Shopping': 'bg-pink-100 text-pink-800',
-    'Bills': 'bg-red-100 text-red-800',
-    'Healthcare': 'bg-teal-100 text-teal-800',
-    'Other': 'bg-gray-100 text-gray-800'
+  const getCategoryColor = (category: string): string => {
+    const categoryColors: { [key: string]: string } = {
+      'Food': 'bg-orange-100 text-orange-800',
+      'Transportation': 'bg-blue-100 text-blue-800',
+      'Entertainment': 'bg-purple-100 text-purple-800',
+      'Income': 'bg-green-100 text-green-800',
+      'Shopping': 'bg-pink-100 text-pink-800',
+      'Bills': 'bg-red-100 text-red-800',
+      'Healthcare': 'bg-teal-100 text-teal-800',
+      'Other': 'bg-gray-100 text-gray-800'
+    };
+    return categoryColors[category] || 'bg-gray-100 text-gray-800';
   };
 
   const handleNavigate = (tab: string) => {
@@ -151,11 +154,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction, onNavigate }) =
                     }`}>
                       {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toFixed(2)}
                     </p>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      categoryColors[transaction.category] || 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {transaction.category}
-                    </span>
+                                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(transaction.category)}`}>
+                        {transaction.category}
+                      </span>
                   </div>
                 </div>
               </div>
