@@ -42,7 +42,10 @@ export type DataAction =
   | { type: 'DELETE_BUDGET'; payload: number }
   | { type: 'SET_CATEGORIES'; payload: string[] }
   | { type: 'SET_PAYMENT_METHODS'; payload: string[] }
-  | { type: 'UPDATE_BUDGET_SPENT'; payload: { category: string; amount: number } };
+  | { type: 'UPDATE_BUDGET_SPENT'; payload: { category: string; amount: number } }
+  | { type: 'ADD_CATEGORY'; payload: string }
+  | { type: 'SET_CATEGORIES'; payload: string[] }
+  | { type: 'SET_PAYMENT_METHODS'; payload: string[] };
 
 // Initial state with no hardcoded data
 const initialState: DataState = {
@@ -145,6 +148,11 @@ function dataReducer(state: DataState, action: DataAction): DataState {
             : budget
         )
       };
+    case 'ADD_CATEGORY':
+      return {
+        ...state,
+        categories: [...state.categories, action.payload]
+      };
     default:
       return state;
   }
@@ -160,6 +168,7 @@ interface DataContextType {
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   updateBudget: (budget: Budget) => void;
   deleteBudget: (id: number) => void;
+  addCategory: (category: string) => void;
   getTransactionsByDateRange: (startDate: string, endDate: string) => Transaction[];
   getTransactionsByCategory: (category: string) => Transaction[];
   getMonthlyStats: () => {
@@ -185,27 +194,48 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   // Helper functions
   const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
-    dispatch({ type: 'ADD_TRANSACTION', payload: { ...transaction, id: Date.now() } });
+    const newTransaction: Transaction = {
+      ...transaction,
+      id: Date.now()
+    };
+    dispatch({ type: 'ADD_TRANSACTION', payload: newTransaction });
+    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const updateTransaction = (transaction: Transaction) => {
     dispatch({ type: 'UPDATE_TRANSACTION', payload: transaction });
+    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const deleteTransaction = (id: number) => {
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
+    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const addBudget = (budget: Omit<Budget, 'id'>) => {
-    dispatch({ type: 'ADD_BUDGET', payload: { ...budget, id: Date.now() } });
+    const newBudget: Budget = {
+      ...budget,
+      id: Date.now(),
+      spent: 0
+    };
+    dispatch({ type: 'ADD_BUDGET', payload: newBudget });
+    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const updateBudget = (budget: Budget) => {
     dispatch({ type: 'UPDATE_BUDGET', payload: budget });
+    updateAllBudgetSpent(state.transactions, state.budgets);
   };
 
   const deleteBudget = (id: number) => {
     dispatch({ type: 'DELETE_BUDGET', payload: id });
+    updateAllBudgetSpent(state.transactions, state.budgets);
+  };
+
+  const addCategory = (category: string) => {
+    if (!state.categories.includes(category)) {
+      dispatch({ type: 'ADD_CATEGORY', payload: category });
+    }
   };
 
   const getTransactionsByDateRange = (startDate: string, endDate: string): Transaction[] => {
@@ -333,6 +363,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     addBudget,
     updateBudget,
     deleteBudget,
+    addCategory,
     getTransactionsByDateRange,
     getTransactionsByCategory,
     getMonthlyStats,
