@@ -34,6 +34,7 @@ export type DataAction =
   | { type: 'SET_ERROR'; payload: string | null }
   | { type: 'SET_TRANSACTIONS'; payload: Transaction[] }
   | { type: 'ADD_TRANSACTION'; payload: Transaction }
+  | { type: 'ADD_TRANSACTIONS_BATCH'; payload: Transaction[] }
   | { type: 'UPDATE_TRANSACTION'; payload: Transaction }
   | { type: 'DELETE_TRANSACTION'; payload: number }
   | { type: 'SET_BUDGETS'; payload: Budget[] }
@@ -97,6 +98,13 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         ...state, 
         transactions: newTransactions,
         budgets: updateAllBudgetSpent(newTransactions, state.budgets)
+      };
+    case 'ADD_TRANSACTIONS_BATCH':
+      const batchTransactions = [...state.transactions, ...action.payload.map(t => ({ ...t, id: generateId() }))];
+      return {
+        ...state,
+        transactions: batchTransactions,
+        budgets: updateAllBudgetSpent(batchTransactions, state.budgets)
       };
     case 'UPDATE_TRANSACTION':
       const updatedTransactions = state.transactions.map(t => 
@@ -168,6 +176,7 @@ interface DataContextType {
   state: DataState;
   dispatch: React.Dispatch<DataAction>;
   addTransaction: (transaction: Omit<Transaction, 'id'>) => void;
+  addTransactionsBatch: (transactions: Omit<Transaction, 'id'>[]) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (id: number) => void;
   addBudget: (budget: Omit<Budget, 'id'>) => void;
@@ -204,6 +213,14 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       id: generateId()
     };
     dispatch({ type: 'ADD_TRANSACTION', payload: newTransaction });
+  };
+
+  const addTransactionsBatch = (transactions: Omit<Transaction, 'id'>[]) => {
+    const transactionsWithIds = transactions.map(transaction => ({
+      ...transaction,
+      id: generateId()
+    }));
+    dispatch({ type: 'ADD_TRANSACTIONS_BATCH', payload: transactionsWithIds });
   };
 
   const updateTransaction = (transaction: Transaction) => {
@@ -357,6 +374,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     state,
     dispatch,
     addTransaction,
+    addTransactionsBatch,
     updateTransaction,
     deleteTransaction,
     addBudget,

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle, X, Plus, Trash2, Eye, Edit3 } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle, X, Plus, Trash2 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 
 interface CSVTransaction {
@@ -12,7 +12,7 @@ interface CSVTransaction {
 }
 
 const CSVImport: React.FC = () => {
-  const { state, addTransaction, addCategory } = useData();
+  const { state, addTransactionsBatch, addCategory } = useData();
   const [isDragging, setIsDragging] = useState(false);
   const [importStatus, setImportStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
   const [importedTransactions, setImportedTransactions] = useState<CSVTransaction[]>([]);
@@ -210,17 +210,15 @@ const CSVImport: React.FC = () => {
       addCategory(category);
     });
 
-    // Then add selected transactions
-    transactionsToImport.forEach(transaction => {
-      addTransaction({
-        description: transaction.description,
-        amount: transaction.amount,
-        category: transaction.category,
-        date: transaction.date,
-        type: transaction.type,
-        paymentMethod: 'CSV Import'
-      });
-    });
+    // Add all selected transactions in a batch
+    addTransactionsBatch(transactionsToImport.map(transaction => ({
+      description: transaction.description,
+      amount: transaction.amount,
+      category: transaction.category,
+      date: transaction.date,
+      type: transaction.type,
+      paymentMethod: 'CSV Import'
+    })));
 
     // Reset state
     setImportedTransactions([]);
