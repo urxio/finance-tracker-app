@@ -93,19 +93,22 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         budgets: updateAllBudgetSpent(action.payload, state.budgets)
       };
     case 'ADD_TRANSACTION':
-      const newTransactions = [...state.transactions, { ...action.payload, id: generateId() }];
+      const singleNewTransaction = { ...action.payload, id: generateId() };
+      const singleUpdatedTransactions = [singleNewTransaction, ...state.transactions]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       return { 
         ...state, 
-        transactions: newTransactions,
-        budgets: updateAllBudgetSpent(newTransactions, state.budgets)
+        transactions: singleUpdatedTransactions,
+        budgets: updateAllBudgetSpent(singleUpdatedTransactions, state.budgets)
       };
     case 'ADD_TRANSACTIONS_BATCH':
-      const batchTransactions = [...state.transactions, ...action.payload.map(t => ({ ...t, id: generateId() }))]
+      const newBatchTransactions = action.payload.map(t => ({ ...t, id: generateId() }));
+      const batchUpdatedTransactions = [...newBatchTransactions, ...state.transactions]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       return {
         ...state,
-        transactions: batchTransactions,
-        budgets: updateAllBudgetSpent(batchTransactions, state.budgets)
+        transactions: batchUpdatedTransactions,
+        budgets: updateAllBudgetSpent(batchUpdatedTransactions, state.budgets)
       };
     case 'UPDATE_TRANSACTION':
       const updatedTransactions = state.transactions.map(t => 
