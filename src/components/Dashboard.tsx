@@ -10,12 +10,16 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ onAddTransaction, onNavigate }) => {
   const { state, getMonthlyStats } = useData();
   
+  // Calculate monthly stats and recent transactions using React.useMemo
+  const monthlyStats = React.useMemo(() => getMonthlyStats(), [state.transactions]);
+  
   // Get recent transactions (last 5)
-  const recentTransactions = state.transactions
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
-
-  const monthlyStats = getMonthlyStats();
+  const recentTransactions = React.useMemo(() => 
+    state.transactions
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5),
+    [state.transactions]
+  );
 
   const getCategoryColor = (category: string): string => {
     const categoryColors: { [key: string]: string } = {

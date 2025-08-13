@@ -210,12 +210,12 @@ const CSVImport: React.FC = () => {
       addCategory(category);
     });
 
-    // Add all selected transactions in a batch
+    // Add all selected transactions in a batch, ensuring dates are properly formatted
     addTransactionsBatch(transactionsToImport.map(transaction => ({
       description: transaction.description,
       amount: transaction.amount,
       category: transaction.category,
-      date: transaction.date,
+      date: new Date(transaction.date).toISOString().split('T')[0], // Ensure consistent date format
       type: transaction.type,
       paymentMethod: 'CSV Import'
     })));
