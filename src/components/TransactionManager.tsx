@@ -13,7 +13,9 @@ import {
   AlertTriangle,
   CheckCircle,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 import { useData, Transaction } from '../contexts/DataContext';
 
@@ -32,7 +34,7 @@ interface FilterState {
 }
 
 const TransactionManager: React.FC = () => {
-  const { state, updateTransaction, deleteTransaction } = useData();
+  const { state, updateTransaction, deleteTransaction, deleteTransactionsBatch } = useData();
   const { transactions, categories, paymentMethods } = state;
 
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -41,6 +43,8 @@ const TransactionManager: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'success' | 'error'>('idle');
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null);
+  const [selectedTransactions, setSelectedTransactions] = useState<Set<number>>(new Set());
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
   const [filters, setFilters] = useState<FilterState>({
@@ -87,6 +91,39 @@ const TransactionManager: React.FC = () => {
     setOriginalTransaction(null);
     setErrors({});
     setSaveStatus('idle');
+  };
+
+  const handleSelectTransaction = (id: number) => {
+    setSelectedTransactions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedTransactions(prev => {
+      if (prev.size === filteredTransactions.length) {
+        return new Set();
+      }
+      return new Set(filteredTransactions.map(t => t.id));
+    });
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedTransactions.size === 0) return;
+    setShowBulkDeleteConfirm(true);
+  };
+
+  const confirmBulkDelete = () => {
+    const ids = Array.from(selectedTransactions);
+    deleteTransactionsBatch(ids);
+    setSelectedTransactions(new Set());
+    setShowBulkDeleteConfirm(false);
   };
 
   const validateTransaction = (transaction: Transaction): boolean => {
@@ -483,6 +520,16 @@ const TransactionManager: React.FC = () => {
                 /* View Mode */
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => handleSelectTransaction(transaction.id)}
+                      className="p-1 text-gray-500 hover:text-blue-600 transition-colors duration-200"
+                    >
+                      {selectedTransactions.has(transaction.id) ? (
+                        <CheckSquare className="w-5 h-5" />
+                      ) : (
+                        <Square className="w-5 h-5" />
+                      )}
+                    </button>
                     <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center">
                       <CreditCard className="w-5 h-5 text-gray-600" />
                     </div>
@@ -536,6 +583,38 @@ const TransactionManager: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Bulk Delete Confirmation Modal */}
+      {showBulkDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="flex items-center space-x-3 mb-4">
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Delete Multiple Transactions</h3>
+                <p className="text-gray-500">Are you sure you want to delete {selectedTransactions.size} transactions? This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end space-x-3">
+              <button
+                onClick={() => setShowBulkDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmBulkDelete}
+                disabled={loading}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors duration-200"
+              >
+                {loading ? 'Deleting...' : `Delete ${selectedTransactions.size} Transactions`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (

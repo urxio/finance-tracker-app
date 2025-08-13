@@ -37,6 +37,7 @@ export type DataAction =
   | { type: 'ADD_TRANSACTIONS_BATCH'; payload: Transaction[] }
   | { type: 'UPDATE_TRANSACTION'; payload: Transaction }
   | { type: 'DELETE_TRANSACTION'; payload: number }
+  | { type: 'DELETE_TRANSACTIONS_BATCH'; payload: number[] }
   | { type: 'SET_BUDGETS'; payload: Budget[] }
   | { type: 'ADD_BUDGET'; payload: Budget }
   | { type: 'UPDATE_BUDGET'; payload: Budget }
@@ -126,6 +127,13 @@ function dataReducer(state: DataState, action: DataAction): DataState {
         transactions: filteredTransactions,
         budgets: updateAllBudgetSpent(filteredTransactions, state.budgets)
       };
+    case 'DELETE_TRANSACTIONS_BATCH':
+      const remainingTransactions = state.transactions.filter(t => !action.payload.includes(t.id));
+      return {
+        ...state,
+        transactions: remainingTransactions,
+        budgets: updateAllBudgetSpent(remainingTransactions, state.budgets)
+      };
     case 'SET_BUDGETS':
       return { 
         ...state, 
@@ -183,6 +191,7 @@ interface DataContextType {
   addTransactionsBatch: (transactions: Omit<Transaction, 'id'>[]) => void;
   updateTransaction: (transaction: Transaction) => void;
   deleteTransaction: (id: number) => void;
+  deleteTransactionsBatch: (ids: number[]) => void;
   addBudget: (budget: Omit<Budget, 'id'>) => void;
   updateBudget: (budget: Budget) => void;
   deleteBudget: (id: number) => void;
@@ -233,6 +242,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const deleteTransaction = (id: number) => {
     dispatch({ type: 'DELETE_TRANSACTION', payload: id });
+  };
+
+  const deleteTransactionsBatch = (ids: number[]) => {
+    dispatch({ type: 'DELETE_TRANSACTIONS_BATCH', payload: ids });
   };
 
   const addBudget = (budget: Omit<Budget, 'id'>) => {
@@ -381,6 +394,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     addTransactionsBatch,
     updateTransaction,
     deleteTransaction,
+    deleteTransactionsBatch,
     addBudget,
     updateBudget,
     deleteBudget,
