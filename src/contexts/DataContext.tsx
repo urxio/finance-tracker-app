@@ -231,12 +231,37 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     dispatch({ type: 'ADD_TRANSACTION', payload: newTransaction });
   };
 
-  const addTransactionsBatch = (transactions: Omit<Transaction, 'id'>[]) => {
+  const addTransactionsBatch = async (transactions: Omit<Transaction, 'id'>[]) => {
     const transactionsWithIds = transactions.map(transaction => ({
       ...transaction,
       id: generateId()
     }));
+    
+    // First, update the state with new transactions
     dispatch({ type: 'ADD_TRANSACTIONS_BATCH', payload: transactionsWithIds });
+    
+    // Explicitly save to localStorage
+    try {
+      const updatedState = {
+        ...state,
+        transactions: [...transactionsWithIds, ...state.transactions].sort((a, b) => 
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        )
+      };
+      
+      const dataToSave = {
+        transactions: updatedState.transactions,
+        budgets: updatedState.budgets,
+        categories: updatedState.categories,
+        paymentMethods: updatedState.paymentMethods,
+        lastSaved: new Date().toISOString()
+      };
+      
+      localStorage.setItem('finance-tracker-data', JSON.stringify(dataToSave));
+    } catch (error) {
+      console.error('Error saving batch transactions:', error);
+      throw new Error('Failed to save transactions');
+    }
   };
 
   const updateTransaction = (transaction: Transaction) => {
@@ -286,22 +311,28 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   const getMonthlyStats = () => {
     const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-    const monthlyTransactions = state.transactions.filter(t => 
+    
+    // Create a new array to ensure reactive updates
+    const monthlyTransactions = [...state.transactions].filter(t => 
       t.date.startsWith(currentMonth)
     );
 
+    // Calculate totals from the filtered transactions
     const totalIncome = monthlyTransactions
       .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-    const totalExpenses = Math.abs(monthlyTransactions
+    const totalExpenses = monthlyTransactions
       .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + t.amount, 0));
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
     const savings = totalIncome - totalExpenses;
+    
+    // Calculate budget usage
     const totalBudget = state.budgets.reduce((sum, b) => sum + b.amount, 0);
     const budgetUsed = totalBudget > 0 ? Math.round((totalExpenses / totalBudget) * 100) : 0;
 
+    // Return a new object to ensure reactive updates
     return {
       totalIncome,
       totalExpenses,
