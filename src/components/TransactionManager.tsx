@@ -404,16 +404,48 @@ const TransactionManager: React.FC = () => {
       {/* Transactions List */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Transactions ({filteredTransactions.length})
-            </h2>
-            <div className="flex items-center space-x-2">
-              {loading && (
-                <div className="flex items-center text-sm text-gray-500">
-                  <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
-                  Loading...
-                </div>
+          <div className="flex flex-col space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Transactions ({filteredTransactions.length})
+              </h2>
+              <div className="flex items-center space-x-2">
+                {loading && (
+                  <div className="flex items-center text-sm text-gray-500">
+                    <RefreshCw className="w-4 h-4 mr-1 animate-spin" />
+                    Loading...
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Bulk Actions Toolbar */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleSelectAll}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900"
+                >
+                  {selectedTransactions.size === filteredTransactions.length ? (
+                    <CheckSquare className="w-5 h-5" />
+                  ) : (
+                    <Square className="w-5 h-5" />
+                  )}
+                  <span className="text-sm font-medium">
+                    {selectedTransactions.size === 0
+                      ? "Select All"
+                      : `Selected ${selectedTransactions.size}`}
+                  </span>
+                </button>
+              </div>
+              {selectedTransactions.size > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  className="flex items-center space-x-2 px-4 py-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>Delete Selected ({selectedTransactions.size})</span>
+                </button>
               )}
             </div>
           </div>
