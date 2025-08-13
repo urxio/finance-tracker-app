@@ -210,23 +210,34 @@ const CSVImport: React.FC = () => {
       addCategory(category);
     });
 
-    // Add all selected transactions in a batch, ensuring dates are properly formatted
-    addTransactionsBatch(transactionsToImport.map(transaction => ({
-      description: transaction.description,
-      amount: transaction.amount,
-      category: transaction.category,
-      date: new Date(transaction.date).toISOString().split('T')[0], // Ensure consistent date format
-      type: transaction.type,
-      paymentMethod: 'CSV Import'
-    })));
+    try {
+      // Add all selected transactions in a batch, ensuring dates are properly formatted
+      addTransactionsBatch(transactionsToImport.map(transaction => ({
+        description: transaction.description,
+        amount: transaction.amount,
+        category: transaction.category,
+        date: new Date(transaction.date).toISOString().split('T')[0], // Ensure consistent date format
+        type: transaction.type,
+        paymentMethod: 'CSV Import'
+      })));
 
-    // Reset state
-    setImportedTransactions([]);
-    setNewCategories([]);
-    setImportStatus('idle');
-    setErrorMessage('');
-    setSelectedTransactions(new Set());
-    setShowReview(false);
+      // Set success status and show success message
+      setImportStatus('success');
+      
+      // Reset state after a short delay to show success message
+      setTimeout(() => {
+        setImportedTransactions([]);
+        setNewCategories([]);
+        setImportStatus('idle');
+        setErrorMessage('');
+        setSelectedTransactions(new Set());
+        setShowReview(false);
+      }, 1500);
+
+    } catch (error) {
+      setImportStatus('error');
+      setErrorMessage('Error importing transactions. Please try again.');
+    }
   };
 
   const handleCancel = () => {
@@ -340,6 +351,13 @@ Restaurant,-85.50,Food,2024-01-12`;
         <div className="flex items-center space-x-2 text-blue-600">
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
           <span>Processing CSV file...</span>
+        </div>
+      )}
+
+      {importStatus === 'success' && (
+        <div className="flex items-center space-x-2 text-green-600 bg-green-50 p-4 rounded-lg">
+          <CheckCircle className="w-5 h-5" />
+          <span>Transactions imported successfully! Dashboard will update shortly.</span>
         </div>
       )}
 

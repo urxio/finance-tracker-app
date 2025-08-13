@@ -106,10 +106,13 @@ function dataReducer(state: DataState, action: DataAction): DataState {
       const newBatchTransactions = action.payload.map(t => ({ ...t, id: generateId() }));
       const batchUpdatedTransactions = [...newBatchTransactions, ...state.transactions]
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      const updatedBudgetsForBatch = updateAllBudgetSpent(batchUpdatedTransactions, state.budgets);
+      
+      // Return a completely new state object to ensure proper re-render
       return {
         ...state,
-        transactions: batchUpdatedTransactions,
-        budgets: updateAllBudgetSpent(batchUpdatedTransactions, state.budgets)
+        transactions: [...batchUpdatedTransactions],
+        budgets: [...updatedBudgetsForBatch]
       };
     case 'UPDATE_TRANSACTION':
       const updatedTransactions = state.transactions.map(t => 
